@@ -9,6 +9,9 @@ import {
   Montserrat_700Bold,
 } from "@expo-google-fonts/montserrat";
 import * as SplashScreen from "expo-splash-screen";
+
+import { Routes } from './src/routes';
+
 import {THEME} from "./src/theme";
 
 // Keep the splash screen visible while we fetch resources
@@ -41,7 +44,7 @@ export default function App() {
           backgroundColor="transparent"
           translucent
         />
-        {isFontLoaded ? <></> : <></>}
+        {isFontLoaded ? <Routes /> : <></>}
       </NativeBaseProvider>
     );
   }
