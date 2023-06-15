@@ -1,4 +1,4 @@
-import {Input, Button, Icon, Container } from "native-base";
+import {Input, Button, Icon, IInputProps } from "native-base";
 import { Entypo } from "@expo/vector-icons";
 
 export function InputSearch(){
@@ -9,6 +9,8 @@ export function InputSearch(){
             borderWidth={0}
             fontWeight="200"
             shadow={3}
+            autoCapitalize="none"
+            autoCorrect={false}
             placeholder="Qual é a sua linha?"
             placeholderTextColor="gray.200"
             rounded="md"

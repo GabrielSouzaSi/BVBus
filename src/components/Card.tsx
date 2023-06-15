@@ -3,6 +3,10 @@ import { Text, Button, Box, Center } from "native-base";
 import { AppNavigatorRoutesProps } from "@routes/app.routes";
 import { useNavigation } from "@react-navigation/native";
 
+type Props = {
+  number?: string;
+}
+
 export function Card() {
 
     const navigation = useNavigation<AppNavigatorRoutesProps>();
