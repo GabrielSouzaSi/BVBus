@@ -22,9 +22,10 @@ export function Line() {
     navigation.navigate("lineCard");
   }
 
+  // 
   async function getRoutes() {
     try {
-      const response = await api.get("/routes");
+      const response = await api.get("");
       setResult(response.data);
     } catch (error) {
       console.log(error);
@@ -34,6 +35,8 @@ export function Line() {
         bgColor: "red.500",
       });
     }
+    console.log(result);
+    
   }
 
   useEffect(() => {
@@ -55,7 +58,7 @@ export function Line() {
           data={result} //dados
           keyExtractor={item => item.id} // chave: valor
           renderItem={({ item }) => (
-            <ListLine number={item.number} title={item.description} onPress={handleOpenLineCard} />
+            <ListLine number={item.number} title={item.description +" - "+ item.sense} onPress={handleOpenLineCard} />
           )}
           showsVerticalScrollIndicator={false} //nao exibe a barrinha
           _contentContainerStyle = {{ paddingBottom: 50 }}

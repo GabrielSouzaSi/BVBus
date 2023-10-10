@@ -1,15 +1,22 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "http://192.168.100.73:3000",
+  baseURL: "http://appbus.conexo.solutions:8000/api/lines",
 });
 
-export const restDB = axios.create({
-  baseURL: "https://mapdata-8cfb.restdb.io/rest",
-  headers: {
-    "Content-Type": "application/json",
-    "x-apikey": "024b333c554a1f3df9c9c6bc159fd3416efdc",
-    "cache-control": "no-cache",
-  },
+export const lineBus = axios.create({ // buscar dados da linha
+  baseURL: "http://appbus.conexo.solutions:8000/api/lines",
+});
+
+export const busDataLocation = axios.create({ // buscar dados do onibus da linha
+  baseURL: "http://appbus.conexo.solutions:8000/api/lines/busesLocationt",
+});
+
+export const pointResult = axios.create({ // buscar dados do tempo em relação ao ponto 
+  baseURL: "http://appbus.conexo.solutions:8000/api/line",
+});
+
+export const bus = axios.create({
+  baseURL: "http://appbus.conexo.solutions:8000/api",
 });
 
