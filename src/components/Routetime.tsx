@@ -1,12 +1,12 @@
-import { VStack, HStack, Center, Text, Divider, Button } from "native-base";
+import { VStack, HStack, Center, Text, Divider, Button, Box } from "native-base";
 
 export function RouteTime() {
   return (
-    <>
+    <Box bg="white" mx={8} mt={4} shadow={4} rounded="md">
       <VStack px={8} mt={5} space={5}>
         <Center>
           <Text color="gray.300" fontSize="lg" fontWeight="400">
-            Linha 104 - Centro
+            Horários disponíveis
           </Text>
         </Center>
         <Divider />
@@ -87,6 +87,6 @@ export function RouteTime() {
           </Center>
         </VStack>
       </HStack>
-    </>
+    </Box>
   );
 }

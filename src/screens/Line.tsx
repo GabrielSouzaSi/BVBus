@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { VStack, Text, Button, FlatList, useToast } from "native-base";
+import Spinner from "react-native-loading-spinner-overlay";
 
 import { ScreenHeader } from "@components/ScreenHeader";
 import { ListLine } from "@components/ListLine";
-import { InputSearch } from "@components/InputSearch";
 
 import { AppNavigatorRoutesProps } from "@routes/app.routes";
 
@@ -18,12 +18,16 @@ export function Line() {
 
   const [result, setResult] = useState<RoutesDTO[]>([]);
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [line, setLine] = useState(Number);
+
   function handleOpenLineCard() {
-    navigation.navigate("lineCard");
+    navigation.navigate("lineCard", {lineId: line});
   }
 
-  // 
+  // Requisição para listar todas as linhas
   async function getRoutes() {
+    setIsLoading(true);
     try {
       const response = await api.get("");
       setResult(response.data);
@@ -34,11 +38,16 @@ export function Line() {
         placement: "top",
         bgColor: "red.500",
       });
+    }finally{
+      setIsLoading(false);
     }
-    console.log(result);
-    
   }
 
+  useEffect(() => {
+    if(line){
+      handleOpenLineCard();
+    }
+  }, [line]);
   useEffect(() => {
     getRoutes();
   }, []);
@@ -56,14 +65,19 @@ export function Line() {
         {/* <ListLine onPress={handleOpenLineCard} /> */}
         <FlatList
           data={result} //dados
-          keyExtractor={item => item.id} // chave: valor
+          keyExtractor={(item : any) => item.id} // chave: valor
           renderItem={({ item }) => (
-            <ListLine number={item.number} title={item.description +" - "+ item.sense} onPress={handleOpenLineCard} />
+            <ListLine number={item.number} title={item.description +" - "+ item.sense} onPress={() => setLine(item.id)} />
           )}
           showsVerticalScrollIndicator={false} //nao exibe a barrinha
           _contentContainerStyle = {{ paddingBottom: 50 }}
         />
       </VStack>
+      <Spinner
+        //Valor booleano para tornar spinner visivel
+        visible={isLoading}
+        color="#0DA63E"
+      />
     </VStack>
   );
 }

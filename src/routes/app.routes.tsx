@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { useTheme } from "native-base";
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   createBottomTabNavigator,
   BottomTabNavigationProp,
@@ -16,7 +17,9 @@ import { Hours } from "@screens/Hours";
 type AppRoutes = {
   home: undefined;
   line: undefined;
-  lineCard: undefined;
+  lineCard: {
+    lineId: number;
+  };
   hours: undefined;
 }; //exportando tipagem especifica
 
@@ -64,12 +67,14 @@ export function AppRoutes() {
             <LineSvg fill={color} width={iconSize} height={iconSize} />
           ),
         }}
+        // initialParams={{line: String}}
       />
 
       <Screen
         name="lineCard"
         component={LineCard}
         options={{ tabBarButton: () => null }}
+        initialParams={{lineId: undefined}}
       />
 
       <Screen

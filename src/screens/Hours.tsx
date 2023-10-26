@@ -18,7 +18,7 @@ export function Hours() {
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 
   function handleGoBack() {
-    navigation.navigate("lineCard");
+    navigation.navigate("line");
   }
   return (
     <VStack flex={1}>
