@@ -1,6 +1,6 @@
 import { Marker } from "react-native-maps";
 
-export function MapMarkers(){
+export function MapMarkerBus(){
     return(
 <></>
     );

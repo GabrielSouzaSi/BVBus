@@ -9,6 +9,7 @@ import {
   Center,
   useToast,
   ScrollView,
+  Divider,
 } from "native-base";
 import { Entypo } from "@expo/vector-icons";
 import Spinner from "react-native-loading-spinner-overlay";
@@ -41,6 +42,11 @@ type Line = {
   points: Point[];
 };
 
+type schedule = {
+  dia: string;
+  programacao: object;
+};
+
 export function LineCard() {
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 
@@ -50,9 +56,13 @@ export function LineCard() {
 
   // Recebendo a informação por parametro
   const { lineId } = route.params as ParamsPros;
-
+  // Informações da linha
   const [line, setLine] = useState<Line | null>(null);
+  // Programação dos horários
+  const [hours, setHours] = useState<schedule | null>(null);
+  // Dados de localiação da rota
   const [routeLatLgt, setRouteLatLgt] = useState<LatLng[] | null>(null);
+  // Carregamento
   const [isLoading, setIsLoading] = useState(false);
 
   function handleGoBack() {
@@ -64,17 +74,20 @@ export function LineCard() {
   async function getRouteId() {
     setIsLoading(true);
     try {
-      const response = await api.get(`/${lineId}`);
-      let lineLatLgt = response.data.route.map((line: any) => ({
+      const response = await api.get(`/${lineId}/hours`);
+
+      let lineLatLgt = response.data.data.linha.route.map((line: any) => ({
         latitude: line[0],
         longitude: line[1],
       }));
 
+      setHours(response.data.data);
+
       setRouteLatLgt(lineLatLgt);
 
-      setLine(response.data);
+      setLine(response.data.data.linha);
     } catch (error) {
-      console.log(error);
+      console.log(`Erro ao consultar horários, rota => http://appbus.conexo.solutions:8000/api/lines/${lineId}/hours`);
       toast.show({
         title: "Error no carregamento!",
         placement: "top",
@@ -106,21 +119,31 @@ export function LineCard() {
             <TouchableOpacity onPress={handleGoBack} activeOpacity={0.7}>
               <HStack alignItems="center">
                 <Icon as={Entypo} name="chevron-thin-left" color="gray.300" />
-                <Text color="gray.300" fontSize="md" fontWeight="400" ml={2}>
+                <Text color="gray.300" fontSize={["xs","sm", "md"]} fontWeight="200" ml={1}>
                   Voltar
                 </Text>
               </HStack>
             </TouchableOpacity>
 
             <Center>
-              <Text color="green.500" fontSize="lg" fontWeight="400">
+              <Text color="green.500" fontSize={["xs","sm", "md"]} fontWeight="300">
                 {`${line.number} - ${line.description} - ${line.sense}`}
               </Text>
             </Center>
           </HStack>
+          {routeLatLgt && <Map coordinates={routeLatLgt} />}
+          <VStack px={8} mt={5} space={5}>
+            <Center>
+              <Text color="gray.300" fontSize={["sm", "md", "lg"]} fontWeight="400">
+                Horários disponíveis
+              </Text>
+            </Center>
+            <Divider />
+          </VStack>
           <ScrollView>
-            {routeLatLgt && <Map coordinates={routeLatLgt} />}
-            {/* <RouteTime /> */}
+            {hours && (
+              <RouteTime dia={hours.dia} programacao={hours.programacao} />
+            )}
           </ScrollView>
         </>
       )}

@@ -1,92 +1,94 @@
-import { VStack, HStack, Center, Text, Divider, Button, Box } from "native-base";
+import {
+  VStack,
+  Stack,
+  HStack,
+  Center,
+  Text,
+  Divider,
+  Button,
+  Box,
+  View,
+  Square,
+} from "native-base";
 
-export function RouteTime() {
+export function RouteTime({ dia, programacao, ...rest }: any) {
+  function formatHours(day: any) {
+    if (programacao.weekdays[day].length) {
+      let data = programacao.weekdays[day];
+      return data.map((item: any, index: number) => {
+        return (
+          <Center key={index} m={1} w="70px" h="30px" bg="green.500">
+            <Box
+              _text={{
+                fontWeight: "300",
+                fontSize: "sm",
+                color: "white",
+              }}
+            >
+              {item.start.slice(0,5)}
+            </Box>
+          </Center>
+        );
+      });
+    } else {
+      return (
+        <>
+          <Text color="green.500" fontSize={["sm", "md", "lg"]} fontWeight="300">
+            Horário indisponível no momento!
+          </Text>
+        </>
+      );
+    }
+  }
+  // function scheduleHours(day: any) {}
+
   return (
-    <Box bg="white" mx={8} mt={4} shadow={4} rounded="md">
-      <VStack px={8} mt={5} space={5}>
+    <>
+      <Box bg="white" mx={8} pb={4} mt={4} shadow={4} rounded="md">
         <Center>
-          <Text color="gray.300" fontSize="lg" fontWeight="400">
-            Horários disponíveis
+          <Text color="gray.300" mt={4} fontSize={["sm", "md", "lg"]} fontWeight="400">
+            Dias úteis
           </Text>
         </Center>
-        <Divider />
-      </VStack>
-
-      <HStack mt={5} px={8} justifyContent="space-between">
-        <VStack>
-          <Button
-            variant="outline"
-            bg="green.500"
-            _text={{ color: "white", fontWeight: "300" }}
-            _pressed={{ bg: "green.600" }}
-          >
-            Dias úteis
-          </Button>
-          <Center>
-            <Text mt={5} color="gray.300" fontSize="md" fontWeight="400">
-              Manhã
-            </Text>
-            <Divider bg="green.500" />
-            <Text mt={5} color="gray.300" fontSize="sm" fontWeight="300">
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-            </Text>
-          </Center>
-        </VStack>
-        <VStack>
-          <Button
-            variant="outline"
-            _text={{ color: "gray.300", fontWeight: "300" }}
-            _pressed={{ bg: "green.600" }}
-          >
+        <View
+          flex={1}
+          flexDirection="row"
+          flexWrap="wrap"
+          justifyContent="center"
+        >
+          {formatHours(1)}
+        </View>
+      </Box>
+      <Box bg="white" mx={8} pb={4} mt={4} shadow={4} rounded="md">
+        <Center>
+          <Text color="gray.300" mt={4} fontSize={["sm", "md", "lg"]} fontWeight="400">
             Sábado
-          </Button>
-          <Center>
-            <Text mt={5} color="gray.300" fontSize="md" fontWeight="400">
-              Tarde
-            </Text>
-            <Divider />
-            <Text mt={5} color="gray.50" fontSize="sm" fontWeight="300">
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-            </Text>
-          </Center>
-        </VStack>
-        <VStack>
-          <Button
-            variant="outline"
-            _text={{ color: "gray.300", fontWeight: "300" }}
-            _pressed={{ bg: "green.600" }}
-          >
+          </Text>
+        </Center>
+        <View
+          flex={1}
+          flexDirection="row"
+          flexWrap="wrap"
+          justifyContent="center"
+        >
+          {formatHours(6)}
+        </View>
+      </Box>
+      <Box bg="white" mx={8} pb={4} my={4} shadow={4} rounded="md">
+        <Center>
+          <Text color="gray.300" mt={4} fontSize={["sm", "md", "lg"]} fontWeight="400">
             Domingo
-          </Button>
-          <Center>
-            <Text mt={5} color="gray.300" fontSize="md" fontWeight="400">
-              Noite
-            </Text>
-            <Divider />
-            <Text mt={5} color="gray.50" fontSize="sm" fontWeight="300">
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-              06:45 - 07-35{"\n"}
-            </Text>
-          </Center>
-        </VStack>
-      </HStack>
-    </Box>
+          </Text>
+        </Center>
+        <View
+          flex={1}
+          flexDirection="row"
+          flexWrap="wrap"
+          justifyContent="center"
+        >
+          {formatHours(0)}
+        </View>
+      </Box>
+    </>
   );
 }

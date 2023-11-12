@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { VStack, Text, Button, FlatList, useToast } from "native-base";
+import { useNavigation } from "@react-navigation/native";
+import { VStack, FlatList, useToast } from "native-base";
 import Spinner from "react-native-loading-spinner-overlay";
 
 import { ScreenHeader } from "@components/ScreenHeader";
@@ -22,7 +22,7 @@ export function Line() {
   const [line, setLine] = useState(Number);
 
   function handleOpenLineCard() {
-    navigation.navigate("lineCard", {lineId: line});
+    navigation.navigate("lineCard", { lineId: line });
   }
 
   // Requisição para listar todas as linhas
@@ -32,19 +32,19 @@ export function Line() {
       const response = await api.get("");
       setResult(response.data);
     } catch (error) {
-      console.log(error);
+      console.log(`Erro ao consultar todas as linhas, rota => http://appbus.conexo.solutions:8000/api/lines`);
       toast.show({
         title: "Error no carregamento!",
         placement: "top",
         bgColor: "red.500",
       });
-    }finally{
+    } finally {
       setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    if(line){
+    if (line) {
       handleOpenLineCard();
     }
   }, [line]);
@@ -52,32 +52,35 @@ export function Line() {
     getRoutes();
   }, []);
   return (
-    <VStack flex={1}>
-      <ScreenHeader title="Linhas" />
+    <>
+      {!isLoading ? (
+        <VStack flex={1}>
+          <ScreenHeader title="Linhas dinponíveis" />
 
-      <VStack p={8}>
-        {/* <InputSearch /> */}
-
-        <Text mt={4} mb={6} color="gray.300" fontSize="md" fontWeight="400">
-          Linhas dinponíveis
-        </Text>
-
-        {/* <ListLine onPress={handleOpenLineCard} /> */}
-        <FlatList
-          data={result} //dados
-          keyExtractor={(item : any) => item.id} // chave: valor
-          renderItem={({ item }) => (
-            <ListLine number={item.number} title={item.description +" - "+ item.sense} onPress={() => setLine(item.id)} />
-          )}
-          showsVerticalScrollIndicator={false} //nao exibe a barrinha
-          _contentContainerStyle = {{ paddingBottom: 50 }}
-        />
-      </VStack>
+          <VStack pb={10}>
+            <FlatList
+              data={result} //dados
+              keyExtractor={(item: any) => item.id} // chave: valor
+              renderItem={({ item }) => (
+                <ListLine
+                  number={item.number}
+                  title={item.description + " - " + item.sense}
+                  onPress={() => setLine(item.id)}
+                />
+              )}
+              showsVerticalScrollIndicator={false} //nao exibe a barrinha
+              _contentContainerStyle={{ padding:8 }}
+            />
+          </VStack>
+        </VStack>
+      ) : (
+        <></>
+      )}
       <Spinner
         //Valor booleano para tornar spinner visivel
         visible={isLoading}
         color="#0DA63E"
       />
-    </VStack>
+    </>
   );
 }

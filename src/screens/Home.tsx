@@ -39,6 +39,7 @@ import { MarkerBus } from "@components/BusLocation";
 import ImagePoint from "@assets/point/ponto.png";
 import ImageBus from "@assets/bus/buss.png";
 import Spinner from "react-native-loading-spinner-overlay/lib";
+import { MapPolylines } from "@components/MapPolyline";
 
 type PointData = {
   id: number;
@@ -98,7 +99,6 @@ export function Home() {
 
   // Lista de ônibus da linha
   const [bus, setBus] = useState([]);
-  const [busListId, setBusListId] = useState<any>();
 
   const [statusRoute, setStatusRoute] = useState(false);
 
@@ -139,8 +139,15 @@ export function Home() {
       //pega a localização do dispositivo
       const currentPosition = await getCurrentPositionAsync();
 
+      mapRaf.current?.animateCamera({
+        pitch: 0,
+        center: {
+          latitude: currentPosition.coords.latitude,
+          longitude: currentPosition.coords.longitude,
+        },
+      });
       setLocation(currentPosition);
-      // console.log("Localização atual => ",currentPosition);
+      // console.log("Localização atual => ", currentPosition);
     }
   }
 
@@ -148,6 +155,8 @@ export function Home() {
   async function pointBus() {
     Keyboard.dismiss();
     setIsLoading(true);
+    setPoints([]);
+
     clearState();
     try {
       const response = await lineBus.get(`/search2/?filter=${search}`);
@@ -163,6 +172,10 @@ export function Home() {
       //manda o objeto para o componente FlatList
       setNameLine(info);
     } catch (error: any) {
+      errorMessage(
+        `Erro ao pesquisar lina, rota => /search2/?filter=${search}`
+      );
+
       setIsLoading(false);
       const err = error.response.data.erro;
       toast.show({
@@ -193,6 +206,9 @@ export function Home() {
 
       // console.log(encodeURIComponent(JSON.stringify(busReq)));
     } catch (error: any) {
+      errorMessage(
+        `Erro ao consultar a linha que o usoário selecionou, rota => /search/${lineSelectedUser.id} `
+      );
       setIsLoading(false);
       const err = error.response.data.erro;
       toast.show({
@@ -213,31 +229,38 @@ export function Home() {
       latitude: line[0],
       longitude: line[1],
     }));
-    
+
     setLine(coord); // Monta a linha no mapa
-    
+
     setPoints(DataLinePoint[0][0].points); //Manta os dados dos abrigos da linha
     setNameLine([]); //fecha o resultado da pesquisa
-    
+
     setSelectUserPoint(true); // Mostrar modal
-
   }
-
   // #4 Selecionar parada do onibus
-  async function selectPoint(pointSelected: any) {
-    // setIsLoading(true);
-    
-    setPointSelected(pointSelected);
-  }
+  async function selectPoint(p: any) {
+    console.log(p);
 
-  async function reqPonitLine(req: string) {
+    setIsLoading(true);
+    if (pointSelected?.id) {
+      clearState();
+      setPointSelected(p);
+      console.log("true");
+    } else {
+      console.log("false");
+      setPointSelected(p);
+    }
+
     try {
-      const response = await pointResult.get(req);
-
+      const response = await pointResult.get(
+        `/${lineIdSelected}/point/${p.id}`
+      );
       setBus(response.data);
       setShowModal(true);
     } catch (error: any) {
-      console.log(error.response.data);
+      errorMessage(
+        `Erro ao selcionar o ponto, rota => /${lineIdSelected}/point/${pointSelected?.id} => ${error.response.data}`
+      );
       const err = error.response.data.erro;
       toast.show({
         title: err,
@@ -251,112 +274,96 @@ export function Home() {
 
   // #5 ônibus selecionado
   function busSelectedUser(item: any) {
-    clearState();
     setShowModal(false);
-    setBeforeBusId(item.bus[0].vehicleId);
-    setBusPosition({
-      latitude: Number(item.bus[0].latitude),
-      longitude: Number(item.bus[0].longitude),
-    });
+    setIsLoading(true);
 
-    setTimePoint({
-      tempo: item.time,
-      distancia: item.distance,
-    });
-
-    setStatusRoute(item.statusRoute);
-
-    setShowDescPoint(true);
-
-    if (item.newRoute.length == 2) {
-      // setLinePoint1(item.newRoute[0]);
-      // setLinePoint2(item.newRoute[1]);
-      setModalInfoBus(true);
-    } else {
-      setLinePoint1(item.newRoute);
-    }
+    positionBus(lineIdSelected, pointSelected?.id, item.bus[0].vehicleId);
   }
 
-  async function positionBus(uri: any) {
-    console.log(uri);
+  // Função para obter dados dos unibus  
+  async function positionBus(idLine: any, idPoint: any, idBus: any) {
+    // console.log(`idLine => ${idLine} idPoint => ${idPoint} idBus => ${idBus}`);
     try {
-      const response = await pointResult.get(
-        `/${lineIdSelected}/point/${pointSelected?.id}`
-      );
+      const response = await pointResult.get(`/${idLine}/point/${idPoint}`);
       let result = response.data.map((item: any) => {
         return item.data.bus[0].vehicleId;
       });
 
-      let r = result.filter((item: any) => item === beforebusId);
-      console.log("Compare ", r.length);
+      let r = result.filter((item: any) => item === idBus);
+      // console.log("Compare ", r.length);
 
       if (r.length) {
         try {
-          const response = await pointResult.get(uri);
-
-          setBusPosition({
-            latitude: Number(response.data.data.bus[0].latitude),
-            longitude: Number(response.data.data.bus[0].longitude),
-          });
-
-          setTimePoint({
-            tempo: response.data.data.time,
-            distancia: response.data.data.distance,
-          });
-
-          setStatusRoute(response.data.data.statusRoute);
-
-          setShowDescPoint(true);
+          const response = await pointResult.get(
+            `/${idLine}/point/${idPoint}/bus/${idBus}`
+          );
 
           if (response.data.data.newRoute.length == 2) {
             // setLinePoint1(response.data.data.newRoute[0]);
             // setLinePoint2(response.data.data.newRoute[1]);
-            setBeforeBusId(0);
+            setModalInfoBus(true);
             clearState();
-            setModalInfoBus(true)
           } else {
+            setBusPosition({
+              latitude: Number(response.data.data.bus[0].latitude),
+              longitude: Number(response.data.data.bus[0].longitude),
+            });
+
+            setTimePoint({
+              tempo: response.data.data.time,
+              distancia: response.data.data.distance,
+            });
+
+            setStatusRoute(response.data.data.statusRoute);
+
             setLinePoint1(response.data.data.newRoute);
+            setShowDescPoint(true);
+            setBeforeBusId(idBus);
           }
         } catch (error: any) {
           setBeforeBusId(0);
+          errorMessage(
+            `Erro ao consultar os dados do onibus selecionado, rota => /${idLine}/point/${idPoint}/bus/${idBus}`
+          );
           const err = error.response.data.erro;
           toast.show({
             title: err,
             placement: "top",
             bgColor: "red.500",
           });
+        } finally {
+          setIsLoading(false);
         }
       } else {
         clearState();
       }
     } catch (error: any) {
       setBeforeBusId(0);
+      errorMessage(
+        `Erro ao consultar o ponto selecionado, rota => /${idLine}/point/${idPoint}`
+      );
       const err = error.response.data.erro;
       toast.show({
         title: err,
         placement: "top",
         bgColor: "red.500",
       });
-    }
-  }
-
-  async function onMapLoaded() {
-    if (points.length > 0) {
-      console.log("OnloadMap!");
-      mapRef.current?.fitToSuppliedMarkers(["first", "last"], {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-      });
+    } finally {
+      setIsLoading(false);
     }
   }
 
   function clearState() {
     setShowDescPoint(false);
-    
     setBeforeBusId(0);
     setBusPosition(null);
     setLinePoint1([]);
-    setLinePoint2([]);
   }
+
+  function errorMessage(message: string) {
+    console.log(message);
+  }
+
   useEffect(() => {
     //chama a função para requisitar a permissão de localização do dispositivo
     requestLocationPermission();
@@ -374,7 +381,7 @@ export function Home() {
 
   useEffect(() => {
     if (points.length > 1) {
-      console.log("OnloadMap!");
+      // console.log("OnloadMap!");
       let p = { latitude: points[0].lat, longitude: points[0].lgt };
       mapRaf.current?.animateCamera({
         pitch: 0,
@@ -384,37 +391,23 @@ export function Home() {
   }, [points]);
 
   useEffect(() => {
-    if (busListId) {
-      console.log(busListId);
-    }
-  }, [busListId]);
-
-  useEffect(() => {
+    clearTimeout(time);
     if (beforebusId) {
-      clearTimeout(time);
       // setURL(`/${lineIdSelected}/point/${pointSelected?.id}/bus/${beforebusId}`);
-      console.log("useEffect busId =>", beforebusId, time);
+      // console.log("useEffect busId =>", beforebusId, time);
       let timereq = setInterval(() => {
         if (beforebusId == 0) {
+          console.log("busId => ", beforebusId);
           return;
         } else {
-          positionBus(
-            `${lineIdSelected}/point/${pointSelected?.id}/bus/${beforebusId}`
-          );
+          positionBus(lineIdSelected, pointSelected?.id, beforebusId);
         }
-      }, 20000);
+      }, 10000);
       setTime(timereq);
     }
     return () => clearTimeout(time);
   }, [beforebusId]);
 
-  useEffect(() => {
-    if (pointSelected) {
-      console.log("useEffect pointId => ", pointSelected.id);
-
-      reqPonitLine(`/${lineIdSelected}/point/${pointSelected.id}`);
-    }
-  }, [pointSelected]);
   useEffect(() => {
     if (statusRoute) {
       setModalInfoRoute(true);
@@ -430,7 +423,7 @@ export function Home() {
   //       distanceInterval: 1,
   //     },
   //     (response) => {
-  //       console.log("Nova Localização!", response.coords);
+  //       console.log("Nova Localização!", response);
 
   //       setLocation(response);
   //       mapRaf.current?.animateCamera({
@@ -443,25 +436,31 @@ export function Home() {
 
   return (
     <View flex={1}>
-      {location && (
+      {location ? (
         <MapView
           provider={PROVIDER_GOOGLE}
           ref={mapRaf}
           style={{ flex: 1, width: "100%" }}
           initialRegion={{
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
+            latitude: location?.coords.latitude,
+            longitude: location?.coords.longitude,
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0922,
           }}
-          minZoomLevel={13}
+          minZoomLevel={12}
           rotateEnabled={false}
           showsUserLocation
           showsMyLocationButton={false}
           toolbarEnabled={false}
-          onMapLoaded={onMapLoaded}
         >
-          {busPosition && (
+          {line && (
+            <MapPolylines
+              coordinates={line}
+              colorLine="#0DA63E"
+              strokeWidth={4}
+            />
+          )}
+          {busPosition ? (
             <Marker
               image={ImageBus}
               title="Ônibus"
@@ -470,22 +469,9 @@ export function Home() {
                 longitude: busPosition.longitude,
               }}
             />
+          ) : (
+            <></>
           )}
-          {linePoint1 && (
-            <Polyline
-              coordinates={linePoint1}
-              strokeColor="#0d29a6"
-              strokeWidth={8}
-            />
-          )}
-          {linePoint2 && (
-            <Polyline
-              coordinates={linePoint2}
-              strokeColor="#0d29a6"
-              strokeWidth={8}
-            />
-          )}
-          <Polyline coordinates={line} strokeColor="#0DA63E" strokeWidth={4} />
           {points ? (
             points.map((p, index) => {
               if (index == 0) {
@@ -532,15 +518,26 @@ export function Home() {
           ) : (
             <></>
           )}
+          {linePoint1 ? (
+            <MapPolylines
+              coordinates={linePoint1}
+              colorLine="#0d29a6"
+              strokeWidth={4}
+            />
+          ) : (
+            <></>
+          )}
         </MapView>
+      ) : (
+        <></>
       )}
       <View flex={1} w="100%" position="absolute">
         <View w="100%" position="relative">
-          <View mx={20} my={10}>
+          <View mx={10} my={10}>
             {/* Campo de pesquisa */}
             <Input
               bg="white"
-              py={5}
+              py={2}
               borderWidth={0}
               fontWeight="200"
               shadow={3}
@@ -572,7 +569,8 @@ export function Home() {
               value={search}
               onChangeText={setSearch}
               onSubmitEditing={pointBus}
-              size="md"
+              size={["xs","sm", "md"]}
+              style={{ fontWeight: "300" }}
             />
             {/* Resultado da pesquisa */}
             {nameLine?.length ? (
@@ -587,7 +585,7 @@ export function Home() {
                         mt={2}
                         mb={2}
                         color="gray.300"
-                        fontSize="md"
+                        fontSize={["xs","sm", "md"]}
                         fontWeight="300"
                       >
                         {item.number} - {item.description} - {item.sense}
@@ -609,7 +607,7 @@ export function Home() {
             position="absolute"
             w="80%"
             m={10}
-            bottom={20}
+            bottom={0}
             shadow={3}
             rounded="md"
             bg="green.500"
@@ -618,12 +616,12 @@ export function Home() {
               <HStack>
                 <VStack flex={1}>
                   <Text
-                    fontSize="sm"
+                    fontSize={["sm", "md", "lg"]}
                     color="white"
                     fontFamily="medium"
-                    fontWeight="200"
+                    fontWeight="300"
                   >
-                    Ponto de ônibus N°{pointSelected?.number}
+                    Ponto N°{pointSelected?.number}
                   </Text>
                 </VStack>
                 <TouchableOpacity onPress={() => setShowDescPoint(false)}>
@@ -633,7 +631,7 @@ export function Home() {
               <HStack mt={2}>
                 <VStack flex={1}>
                   <Text
-                    fontSize="md"
+                    fontSize={["xs","sm", "md"]}
                     color="white"
                     fontFamily="bold"
                     fontWeight="300"
@@ -643,12 +641,13 @@ export function Home() {
                 </VStack>
               </HStack>
             </View>
+
             {timePoint ? (
               <View bg="gray.200" rounded="md" m={2} p={1}>
                 <HStack mt={2}>
                   <VStack flex={1}>
                     <Text
-                      fontSize="sm"
+                      fontSize={["sm", "md", "lg"]}
                       color="white"
                       fontFamily="medium"
                       fontWeight="200"
@@ -657,7 +656,7 @@ export function Home() {
                     </Text>
                   </VStack>
                   <Text
-                    fontSize="sm"
+                    fontSize={["sm", "md", "lg"]}
                     color="white"
                     fontFamily="medium"
                     fontWeight="200"
@@ -668,7 +667,7 @@ export function Home() {
                 <HStack mt={2}>
                   <VStack flex={1}>
                     <Text
-                      fontSize="sm"
+                      fontSize={["sm", "md", "lg"]}
                       color="white"
                       fontFamily="medium"
                       fontWeight="200"
@@ -677,7 +676,7 @@ export function Home() {
                     </Text>
                   </VStack>
                   <Text
-                    fontSize="sm"
+                    fontSize={["sm", "md", "lg"]}
                     color="white"
                     fontFamily="medium"
                     fontWeight="200"
@@ -709,14 +708,14 @@ export function Home() {
                       }}
                       key={index}
                     >
-                      <Text>
-                        {`${item.data.bus[0].plate}/Tempo de epera:${item.data.time}`}
+                      <Text my={2} color="gray.300" fontSize={["xs", "sm", "md"]} fontWeight="300">
+                        {`${item.data.bus[0].plate}/Tempo de espera:${item.data.time}`}
                       </Text>
                     </TouchableOpacity>
                   );
                 })
               ) : (
-                <Text>Ônibus não encontrado no horário atual!</Text>
+                <Text color="gray.300" fontSize={["sm", "md", "lg"]} fontWeight="300">Ônibus não encontrado no horário atual!</Text>
               )}
             </ScrollView>
           </Modal.Body>
@@ -726,32 +725,11 @@ export function Home() {
         <Modal.Content maxWidth="400px">
           <Modal.CloseButton />
           <Modal.Header>Aviso!</Modal.Header>
-          <Modal.Body>
-            <ScrollView>
-              <VStack
-                justifyContent="center"
-                alignItems="center"
-                safeAreaTop // my={6}
-                mb={1}
-              >
-                <Image
-                  size="xs"
-                  resizeMode="cover"
-                  source={ImagePoint}
-                  alt={"Ponto de ônibus"}
-                />
-
-                <Text
-                  mt={2}
-                  mb={6}
-                  color="gray.300"
-                  fontSize="md"
-                  fontWeight="400"
-                >
-                  Selecione um Ponto de ônibus!
-                </Text>
-              </VStack>
-            </ScrollView>
+          <Modal.Body justifyContent="center" alignItems="center">
+            <Image size="xs" source={ImagePoint} alt={"Ponto de ônibus"} />
+            <Text my={2} color="gray.300" fontSize={["sm", "md", "lg"]} fontWeight="300">
+              Selecione um Ponto de ônibus!
+            </Text>
           </Modal.Body>
         </Modal.Content>
       </Modal>
@@ -768,7 +746,7 @@ export function Home() {
                 mb={1}
               >
                 <Image
-                  size="xs"
+                  size={["xs", "sm", "md"]}
                   resizeMode="cover"
                   source={ImageBus}
                   alt={"bus"}
@@ -778,7 +756,7 @@ export function Home() {
                   mt={2}
                   mb={6}
                   color="gray.300"
-                  fontSize="md"
+                  fontSize={["sm", "md", "lg"]}
                   fontWeight="400"
                 >
                   Seu ônibus está próximo do ponto!
@@ -801,7 +779,7 @@ export function Home() {
                 mb={1}
               >
                 <Image
-                  size="xs"
+                  size={["xs","sm","md"]}
                   resizeMode="cover"
                   source={ImageBus}
                   alt={"bus"}
@@ -811,7 +789,7 @@ export function Home() {
                   mt={2}
                   mb={6}
                   color="gray.300"
-                  fontSize="md"
+                  fontSize={["sm", "md", "lg"]}
                   fontWeight="400"
                 >
                   O ônibus já passou do ponto selecionado!
