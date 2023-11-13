@@ -726,7 +726,7 @@ export function Home() {
           <Modal.CloseButton />
           <Modal.Header>Aviso!</Modal.Header>
           <Modal.Body justifyContent="center" alignItems="center">
-            <Image size="xs" source={ImagePoint} alt={"Ponto de ônibus"} />
+            <Image size="sm" resizeMode="cover" source={ImagePoint} alt={"Ponto de ônibus"} />
             <Text my={2} color="gray.300" fontSize={["sm", "md", "lg"]} fontWeight="300">
               Selecione um Ponto de ônibus!
             </Text>
@@ -746,7 +746,7 @@ export function Home() {
                 mb={1}
               >
                 <Image
-                  size={["xs", "sm", "md"]}
+                  size="sm"
                   resizeMode="cover"
                   source={ImageBus}
                   alt={"bus"}
@@ -779,7 +779,7 @@ export function Home() {
                 mb={1}
               >
                 <Image
-                  size={["xs","sm","md"]}
+                  size="sm"
                   resizeMode="cover"
                   source={ImageBus}
                   alt={"bus"}
