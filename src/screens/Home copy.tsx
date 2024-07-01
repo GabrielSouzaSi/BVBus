@@ -1,11 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
-import {
-  StyleSheet,
-  Dimensions,
-  Keyboard,
-  TouchableOpacity
-} from "react-native";
-import { useIsFocused } from "@react-navigation/native";
+import { useRef, useState, useEffect } from "react";
+import {  StyleSheet, Dimensions, Keyboard, TouchableOpacity } from "react-native";
 import {
   Input,
   View,
@@ -38,17 +32,18 @@ import MapView, {
   LatLng,
 } from "react-native-maps";
 import { Entypo, Ionicons } from "@expo/vector-icons";
+import { styles } from "./styles";
 
 import { api, lineBus, pointResult, lines } from "@services/api";
 
 import { InputSearch } from "@components/InputSearch";
 import { Loading } from "@components/Loading";
 import { MarkerBus } from "@components/BusLocation";
-import { MapPolylines } from "@components/MapPolyline";
 
 import ImagePoint from "@assets/point/ponto.png";
 import ImageBus from "@assets/bus/buss.png";
 import Spinner from "react-native-loading-spinner-overlay/lib";
+import { MapPolylines } from "@components/MapPolyline";
 
 type PointData = {
   id: number;
@@ -81,26 +76,9 @@ type ListLine = {
   linha: string;
 };
 
-const { width, height } = Dimensions.get("window");
-
-const ASPECT_RATIO = width / height;
-const LATITUDE = 2.812508;
-const LONGITUDE = -60.707372;
-const LATITUDE_DELTA = 0.0922;
-const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-const SPACE = 0.01;
-
-const markerIDs = ["Marker0", "Marker1"];
-const timeout = 4000;
-let animationTimeout: any;
-
 export function Home() {
-
+  const [service, setService] = useState("");
   const mapRaf = useRef<MapView>(null);
-
-  const isFocused = useIsFocused();
-
-  const [keyboardStatus, setKeyboardStatus] = useState(false);
   // loading
   const [isLoading, setIsLoading] = useState(false);
 
@@ -113,13 +91,16 @@ export function Home() {
   // Array de posição para desenhar a linha da parada selecionada
   const [linePoint1, setLinePoint1] = useState<MarkerData[]>([]);
 
+  // Array de posição para desenhar a linha da parada selecionada
+  const [linePoint2, setLinePoint2] = useState<MarkerData[]>([]);
+
   // Pontos
   const [points, setPoints] = useState<PointData[]>([]);
   // tempo da requisição
   const [time, setTime] = useState<any>(0);
 
   // Ponto Selecionado
-  const [pointSelected, setPointSelected] = useState<PointData | null >(null);
+  const [pointSelected, setPointSelected] = useState<PointData>();
 
   // ID da linha selecionada
   const [lineIdSelected, setLineIdSelected] = useState(Number);
@@ -172,13 +153,23 @@ export function Home() {
     if (granted) {
       //pega a localização do dispositivo
       const currentPosition = await getCurrentPositionAsync();
+
+      mapRaf.current?.animateCamera({
+        pitch: 0,
+        center: {
+          latitude: currentPosition.coords.latitude,
+          longitude: currentPosition.coords.longitude,
+        },
+      });
       setLocation(currentPosition.coords);
-      userPositionMap();
+      // console.log("Localização atual => ", currentPosition);
     }
   }
+
   // #1 Pesquisa linha
   async function pointBus() {
     // Keyboard.dismiss();
+    setPoints([]);
 
     clearState();
     try {
@@ -191,6 +182,8 @@ export function Home() {
       errorMessage(
         `Erro ao pesquisar lina, rota => /search2/?filter=${search}`
       );
+
+      setIsLoading(false);
       const err = error.response.data.erro;
       toast.show({
         title: err,
@@ -199,7 +192,7 @@ export function Home() {
       });
     }
   }
-  // filtra a pesquisa do usuário
+
   function filterLine(text: string) {
     if (text) {
       let filteredLine = nameLine?.filter((line: ListLine) =>
@@ -218,20 +211,34 @@ export function Home() {
     }
   }
 
-  // #2 seleciona a linha com base na pesquisa do usuário
+  // #2 selecionar a linha com base na pesquisa do usuário
   async function LineSearch(lineSelectedUser: number) {
-    setLine([]);
-    setPoints([]);
-    clearState();
     setIsLoading(true);
     setLineIdSelected(lineSelectedUser);
     // console.log(lineSelectedUser.number + " - " + lineSelectedUser.description + " - " + lineSelectedUser.sense);
+
     try {
       const response = await lineBus.get(`/${lineSelectedUser}`);
+
       lineRouteAndPoint(response.data);
+
+      // setIdBus(response.data.data[1][0].vehicleId);
+      // let busReq = response.data.data[1].map((item: any) => {
+      //   return [item.vehicleId];
+      // });
+
+      // console.log(encodeURIComponent(JSON.stringify(busReq)));
     } catch (error: any) {
+      errorMessage(
+        `Erro ao consultar a linha que o usoário selecionou, rota => /search/${lineSelectedUser} `
+      );
+      setIsLoading(false);
       const err = error.response.data.erro;
-      console.log(err);
+      toast.show({
+        title: err,
+        placement: "top",
+        bgColor: "red.500",
+      });
     }
   }
 
@@ -250,33 +257,34 @@ export function Home() {
 
     setPoints(DataLinePoint.points); //Manta os dados dos abrigos da linha
     setShowListLine(false); //fecha o resultado da pesquisa
-  }
 
+    setSelectUserPoint(true); // Mostrar modal
+  }
   // #4 Selecionar parada do onibus
   async function selectPoint(p: any) {
+    // console.log(p);
+
     setIsLoading(true);
     if (pointSelected?.id) {
       clearState();
       setPointSelected(p);
-      console.log("Selecionou outro ponto!");
+      console.log("true");
     } else {
-      console.log("Primeiro ponto selecionado!");
+      console.log("false");
       setPointSelected(p);
     }
-  }
-  async function listBus() {
-    console.log(
-      `https://appbus.conexo.solutions/api/line/${lineIdSelected}/point/${pointSelected?.id}`
-    );
+
     try {
       const response = await pointResult.get(
-        `/${lineIdSelected}/point/${pointSelected?.id}`
+        `/${lineIdSelected}/point/${p.id}`
       );
+      // console.log(response.data.length);
+
       console.log(response.data);
       setBus(response.data);
     } catch (error: any) {
       errorMessage(
-        `Erro ao selcionar o ponto, rota => https://appbus.conexo.solutions/api/line/${lineIdSelected}/point/${pointSelected?.id} => ${error.response.data.erro}`
+        `Erro ao selcionar o ponto, rota => /${lineIdSelected}/point/${pointSelected?.id} => ${error.response.data.erro}`
       );
       const err = error.response.data.erro;
       toast.show({
@@ -288,6 +296,7 @@ export function Home() {
       setIsLoading(false);
     }
   }
+
   // #5 ônibus selecionado
   function busSelectedUser(item: any) {
     setShowModal(false);
@@ -295,11 +304,10 @@ export function Home() {
 
     positionBus(lineIdSelected, pointSelected?.id, item.bus[0].vehicleId);
   }
-  // Função para obter dados dos onibus
+
+  // Função para obter dados dos unibus
   async function positionBus(idLine: any, idPoint: any, idBus: any) {
-    console.log(
-      `https://appbus.conexo.solutions/api/line/${idLine}/point/${idPoint}`
-    );
+    // console.log(`idLine => ${idLine} idPoint => ${idPoint} idBus => ${idBus}`);
     try {
       const response = await pointResult.get(`/${idLine}/point/${idPoint}`);
       let result = response.data.map((item: any) => {
@@ -310,9 +318,6 @@ export function Home() {
       // console.log("Compare ", r.length);
 
       if (r.length) {
-        console.log(
-          `https://appbus.conexo.solutions/api/line/${idLine}/point/${idPoint}/bus/${idBus}`
-        );
         try {
           const response = await pointResult.get(
             `/${idLine}/point/${idPoint}/bus/${idBus}`
@@ -321,8 +326,6 @@ export function Home() {
           if (response.data.data.newRoute.length == 2) {
             // setLinePoint1(response.data.data.newRoute[0]);
             // setLinePoint2(response.data.data.newRoute[1]);
-            console.log("entrou");
-            
             setModalInfoBus(true);
             clearState();
           } else {
@@ -374,6 +377,14 @@ export function Home() {
       setIsLoading(false);
     }
   }
+
+  function clearState() {
+    setShowDescPoint(false);
+    setBeforeBusId(0);
+    setBusPosition(null);
+    setLinePoint1([]);
+  }
+
   async function userPositionMap() {
     const currentPosition = await getCurrentPositionAsync();
 
@@ -387,89 +398,39 @@ export function Home() {
     });
   }
 
-  function clearState() {
-    setShowDescPoint(false); // para de exibir as informações do ponto
-    setBeforeBusId(0); // define em zero para parar as requisições a cada 10 segundos
-    setBusPosition(null); // anula a posição do onibus
-    setLinePoint1([]); // define como vazio para não mostrar a rota no mapa 
+  function focusMap() {
+    setTimeout(() => {
+      console.log("Map Loaded!");
+      mapRef.current?.fitToSuppliedMarkers(["Aa", "Ba"], {edgePadding: { top: 50, right: 50, bottom: 50, left: 50 }});
+    }, 10000)
   }
 
   function errorMessage(message: string) {
     console.log(message);
   }
+
   useEffect(() => {
-    if (isFocused) {
-      userPositionMap();
-      
-    } 
-  },[isFocused])
-  useEffect(() => {
-    if (linePoint1) {
-      mapRaf.current?.fitToCoordinates(linePoint1, { animated: true, edgePadding: { top: 50, right: 50, bottom: 50, left: 50 } });
-      
-    } 
-  },[linePoint1])
-  // Monitora a posição do usuário
-  useEffect(() => {
-    // Função para observar alteração na posição do usuário
-    watchPositionAsync(
-      {
-        accuracy: LocationAccuracy.Highest,
-        timeInterval: 3000,
-        distanceInterval: 3,
-      },
-      (response) => {
-        setLocation(response.coords);
-      }
-    );
-  }, []);
-  // Requisita a permissão de localização ao entror no app e prepara a lista das linhas
-  useEffect(() => {
+    //chama a função para requisitar a permissão de localização do dispositivo
     requestLocationPermission();
     pointBus();
   }, []);
-  // Ajustar rota da tela quando a linha for selecionada
-  useEffect(() => {
-    if (points.length > 0) {
-      setTimeout(() => {
-        mapRaf.current?.fitToCoordinates(line, { animated: true });
-      }, 2000);
-      setTimeout(() => {
-        setSelectUserPoint(true); // Mostrar modal
-      }, 4000);
-    }
-  }, [points]);
-  // Verifica teclado quando ativado/desativado
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
-      setKeyboardStatus(true);
-    });
-    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
-      setKeyboardStatus(false);
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-  useEffect(() => {
-    console.log(pointSelected);
-    if (pointSelected?.id) {
-      console.log(pointSelected);
-      listBus();
-    } else {
-      setIsLoading(false);
-    }
-  }, [pointSelected]);
-  // Exibe o modal com a listagem dos onibus
   useEffect(() => {
     //chama a função para requisitar a permissão de localização do dispositivo
     if (bus.length > 0) {
       setShowModal(true);
     }
   }, [bus]);
-  // Requisita a rota e posição do onibus a cada 10 segundos
+
+  useEffect(() => {
+    if (busPosition) {
+      console.log(busPosition);
+      mapRaf.current?.animateCamera({
+        pitch: 0,
+        center: busPosition,
+      });
+    }
+  }, [busPosition]);
+
   useEffect(() => {
     clearTimeout(time);
     if (beforebusId) {
@@ -488,28 +449,69 @@ export function Home() {
     return () => clearTimeout(time);
   }, [beforebusId]);
 
+  useEffect(() => {
+    if (statusRoute) {
+      setModalInfoRoute(true);
+    }
+  }, [statusRoute]);
+
+  // useEffect(() => {
+  //   // Função para observar alteração na posição do usuário
+  //   watchPositionAsync(
+  //     {
+  //       accuracy: LocationAccuracy.Highest,
+  //       timeInterval: 1000,
+  //       distanceInterval: 1,
+  //     },
+  //     (response) => {
+  //       console.log("Nova Localização!", response);
+
+  //       setLocation(response);
+  //       mapRaf.current?.animateCamera({
+  //         pitch: 0,
+  //         center: response.coords,
+  //       });
+  //     }
+  //   );
+  // }, []);
+
   return (
-    <View style={styles.container}>
+    <View flex={1}>
       <MapView
         provider={PROVIDER_GOOGLE}
         ref={mapRaf}
-        style={styles.map}
+        style={StyleSheet.absoluteFillObject}
         initialRegion={{
-          latitude: LATITUDE,
-          longitude: LONGITUDE,
-          latitudeDelta: LATITUDE_DELTA,
-          longitudeDelta: LONGITUDE_DELTA,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0922,
         }}
-        minZoomLevel={12}
         rotateEnabled={false}
+        showsUserLocation={false}
         showsMyLocationButton={false}
         toolbarEnabled={false}
+        onMapLoaded={focusMap}
       >
         <Marker
           title="Sua Posição"
           coordinate={{
             latitude: location.latitude,
             longitude: location.longitude,
+          }}
+        />
+        <Marker
+          identifier="Aa"
+          coordinate={{
+            latitude: 2.814612,
+            longitude: -60.669872,
+          }}
+        />
+        <Marker
+          identifier="Ba"
+          coordinate={{
+            latitude: 2.842108,
+            longitude: -60.740811,
           }}
         />
         {line && (
@@ -519,12 +521,24 @@ export function Home() {
             strokeWidth={4}
           />
         )}
-        {points.length > 0 &&
+        {busPosition ? (
+          <Marker
+            image={ImageBus}
+            title="Ônibus"
+            coordinate={{
+              latitude: busPosition.latitude,
+              longitude: busPosition.longitude,
+            }}
+          />
+        ) : (
+          <></>
+        )}
+        {/* {points.length > 0 &&
           points.map((p, index) => {
             if (index == 0) {
               return (
                 <Marker
-                  identifier={"Marker0"}
+                  identifier="a"
                   image={ImagePoint}
                   key={index}
                   coordinate={{
@@ -535,10 +549,10 @@ export function Home() {
                   onPress={() => selectPoint(p)}
                 />
               );
-            } else if (index + 1 == points.length) {
+            } else if (index + 1 === points.length) {
               return (
                 <Marker
-                  identifier={"Marker1"}
+                  identifier="b"
                   image={ImagePoint}
                   key={index}
                   coordinate={{
@@ -563,19 +577,7 @@ export function Home() {
                 />
               );
             }
-          })}
-        {busPosition ? (
-          <Marker
-            image={ImageBus}
-            title="Ônibus"
-            coordinate={{
-              latitude: busPosition.latitude,
-              longitude: busPosition.longitude,
-            }}
-          />
-        ) : (
-          <></>
-        )}
+          })} */}
         {linePoint1 ? (
           <MapPolylines
             coordinates={linePoint1}
@@ -586,206 +588,188 @@ export function Home() {
           <></>
         )}
       </MapView>
-      <View w="100%" top={1} position="absolute">
-        <View flex={1} ml={10} mt={10} flexDirection="row">
-          <View w="80%">
-            {/* Campo de pesquisa */}
-            <Input
-              bg="white"
-              py={2}
-              h={12}
-              borderWidth={0}
-              fontWeight="200"
-              shadow={3}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="Qual é a sua linha?"
-              placeholderTextColor="gray.200"
-              rounded="md"
-              _focus={{
-                borderColor: "white",
-                borderWidth: 1,
-                bg: "white",
-              }}
-              InputRightElement={
-                <Icon
-                  as={Entypo}
-                  name="magnifying-glass"
-                  size="md"
-                  color="green.500"
-                  mr={2}
-                />
-              }
-              value={search}
-              onChangeText={(text) => {
-                setSearch(text);
-                filterLine(text);
-              }}
-              onPressIn={() => setShowListLine(true)}
-              size={["xs", "sm", "md"]}
-              style={{ fontWeight: "300" }}
-            />
-            {/* Resultado da pesquisa */}
-            {showListLine ? (
-              <View bg="white" p={2} shadow={3} rounded="md" mt={2}>
-                <FlatList
-                  maxHeight={250}
-                  data={selecTextLine} //dados
-                  keyExtractor={(item: any) => item.id} // chave: valor
-                  renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => LineSearch(item.id)}>
-                      <Text
-                        mt={2}
-                        mb={2}
-                        color="gray.300"
-                        fontSize={["xs", "sm", "md"]}
-                        fontWeight="300"
-                      >
-                        {item.linha}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  showsVerticalScrollIndicator={false} //nao exibe a barrinha
-                />
+      <View flex={1} w="100%" position="absolute">
+        <View w="100%" position="relative">
+          <View flex={1} ml={10} mt={10} flexDirection="row">
+            <View w="80%">
+              {/* Campo de pesquisa */}
+              <Input
+                bg="white"
+                py={2}
+                h={12}
+                borderWidth={0}
+                fontWeight="200"
+                shadow={3}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Qual é a sua linha?"
+                placeholderTextColor="gray.200"
+                rounded="md"
+                _focus={{
+                  borderColor: "white",
+                  borderWidth: 1,
+                  bg: "white",
+                }}
+                InputRightElement={
+                  <Icon
+                    as={Entypo}
+                    name="magnifying-glass"
+                    size="md"
+                    color="green.500"
+                    mr={2}
+                  />
+                }
+                value={search}
+                onChangeText={(text) => {
+                  setSearch(text);
+                  filterLine(text);
+                }}
+                onPressIn={() => setShowListLine(true)}
+                size={["xs", "sm", "md"]}
+                style={{ fontWeight: "300" }}
+              />
+              {/* Resultado da pesquisa */}
+              {showListLine ? (
+                <View bg="white" p={2} shadow={3} rounded="md" mt={2}>
+                  <FlatList
+                    maxHeight={250}
+                    data={selecTextLine} //dados
+                    keyExtractor={(item: any) => item.id} // chave: valor
+                    renderItem={({ item }) => (
+                      <TouchableOpacity onPress={() => LineSearch(item.id)}>
+                        <Text
+                          mt={2}
+                          mb={2}
+                          color="gray.300"
+                          fontSize={["xs", "sm", "md"]}
+                          fontWeight="300"
+                        >
+                          {item.linha}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    showsVerticalScrollIndicator={false} //nao exibe a barrinha
+                  />
+                </View>
+              ) : (
+                <></>
+              )}
+            </View>
+            <View w="20%" h={12} alignItems="center">
+              <Button
+                w={12}
+                h={12}
+                bg="white"
+                borderRadius="full"
+                shadow={1}
+                _pressed={{ bg: "gray.100" }}
+                onPress={userPositionMap}
+              >
+                <Icon as={Entypo} name="location" size="md" color="green.500" />
+              </Button>
+            </View>
+          </View>
+        </View>
+      </View>
+      <View position="relative" alignItems="center" justifyItems="center">
+        {showDescPoint ? (
+          <View
+            position="absolute"
+            w="80%"
+            m={10}
+            bottom={0}
+            shadow={3}
+            rounded="md"
+            bg="green.500"
+          >
+            <View p={3}>
+              <HStack>
+                <VStack flex={1}>
+                  <Text
+                    fontSize={["sm", "md", "lg"]}
+                    color="white"
+                    fontFamily="medium"
+                    fontWeight="300"
+                  >
+                    Ponto N°{pointSelected?.number}
+                  </Text>
+                </VStack>
+                <TouchableOpacity onPress={() => setShowDescPoint(false)}>
+                  <Icon as={Entypo} name="cross" size={6} color="white" />
+                </TouchableOpacity>
+              </HStack>
+              <HStack mt={2}>
+                <VStack flex={1}>
+                  <Text
+                    fontSize={["xs", "sm", "md"]}
+                    color="white"
+                    fontFamily="bold"
+                    fontWeight="300"
+                  >
+                    {pointSelected?.address}
+                  </Text>
+                </VStack>
+              </HStack>
+            </View>
+
+            {timePoint ? (
+              <View bg="gray.200" rounded="md" m={2} p={1}>
+                <HStack mt={2}>
+                  <VStack flex={1}>
+                    <Text
+                      fontSize={["sm", "md", "lg"]}
+                      color="white"
+                      fontFamily="medium"
+                      fontWeight="200"
+                    >
+                      Distância
+                    </Text>
+                  </VStack>
+                  <Text
+                    fontSize={["sm", "md", "lg"]}
+                    color="white"
+                    fontFamily="medium"
+                    fontWeight="200"
+                  >
+                    {timePoint.distancia}
+                  </Text>
+                </HStack>
+                <HStack mt={2}>
+                  <VStack flex={1}>
+                    <Text
+                      fontSize={["sm", "md", "lg"]}
+                      color="white"
+                      fontFamily="medium"
+                      fontWeight="200"
+                    >
+                      Tempo de espera
+                    </Text>
+                  </VStack>
+                  <Text
+                    fontSize={["sm", "md", "lg"]}
+                    color="white"
+                    fontFamily="medium"
+                    fontWeight="200"
+                  >
+                    {timePoint.tempo}
+                  </Text>
+                </HStack>
               </View>
             ) : (
               <></>
             )}
           </View>
-          <View w="20%" h={12} alignItems="center">
-            <Button
-              w={12}
-              h={12}
-              bg="white"
-              borderRadius="full"
-              shadow={1}
-              _pressed={{ bg: "gray.100" }}
-              onPress={userPositionMap}
-            >
-              <Icon as={Entypo} name="location" size="md" color="green.500" />
-            </Button>
-          </View>
-        </View>
+        ) : (
+          <></>
+        )}
       </View>
-      {showDescPoint && !keyboardStatus ? (
-        <View
-          position="absolute"
-          w="80%"
-          m={10}
-          bottom={0}
-          shadow={3}
-          rounded="md"
-          bg="muted.100"
-        >
-          <View p={3}>
-            <HStack>
-              <VStack flex={1}>
-                <Text
-                  fontSize={["sm", "md", "lg"]}
-                  color="green.500"
-                  fontFamily="medium"
-                  fontWeight="300"
-                >
-                  Ponto N°{pointSelected?.number}
-                </Text>
-              </VStack>
-              <TouchableOpacity onPress={() => setShowDescPoint(false)}>
-                <Icon as={Entypo} name="cross" size={6} color="green.500" />
-              </TouchableOpacity>
-            </HStack>
-            <HStack mt={2}>
-              <VStack flex={1}>
-                <Text
-                  fontSize={["xs", "sm", "md"]}
-                  color="green.500"
-                  fontFamily="bold"
-                  fontWeight="300"
-                >
-                  End.:{pointSelected?.address}
-                </Text>
-              </VStack>
-            </HStack>
-          </View>
-
-          {timePoint ? (
-            <View bg="success.500" rounded="md" mx={4} mb={4} p={1} shadow={3}>
-              <HStack mt={2}>
-                <VStack flex={1}>
-                  <Text
-                    fontSize={["xs", "sm", "md"]}
-                    color="white"
-                    fontFamily="medium"
-                    fontWeight="200"
-                  >
-                    Distância
-                  </Text>
-                </VStack>
-                <Text
-                  fontSize={["sm", "md", "lg"]}
-                  color="white"
-                  fontFamily="medium"
-                  fontWeight="200"
-                >
-                  {timePoint.distancia}
-                </Text>
-              </HStack>
-              <HStack mt={2}>
-                <VStack flex={1}>
-                  <Text
-                    fontSize={["xs", "sm", "md"]}
-                    color="white"
-                    fontFamily="medium"
-                    fontWeight="200"
-                  >
-                    Tempo de espera
-                  </Text>
-                </VStack>
-                <Text
-                  fontSize={["sm", "md", "lg"]}
-                  color="white"
-                  fontFamily="medium"
-                  fontWeight="200"
-                >
-                  {timePoint.tempo}
-                </Text>
-              </HStack>
-            </View>
-          ) : (
-            <></>
-          )}
-        </View>
-      ) : (
-        <></>
-      )}
-      <Modal isOpen={selectUserPoint} onClose={() => setSelectUserPoint(false)}>
-        <Modal.Content maxWidth="400px">
-          <Modal.CloseButton />
-          <Modal.Header>Aviso!</Modal.Header>
-          <Modal.Body justifyContent="center" alignItems="center">
-            <Image
-              size="sm"
-              resizeMode="cover"
-              source={ImagePoint}
-              alt={"Ponto de ônibus"}
-            />
-            <Text
-              my={2}
-              color="gray.300"
-              fontSize={["sm", "md", "lg"]}
-              fontWeight="300"
-            >
-              Selecione um Ponto de ônibus!
-            </Text>
-          </Modal.Body>
-        </Modal.Content>
-      </Modal>
       <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
         <Modal.Content maxWidth="400px">
           <Modal.CloseButton />
-          <Modal.Header>Veículos na rota!</Modal.Header>
+          <Modal.Header>Veículos Disponíveis em rota!</Modal.Header>
           <Modal.Body>
             <ScrollView>
-              {bus.length > 0 ? (
+              {/* {bus.length > 0 ? (
                 bus.map((item: any, index) => {
                   if (item.data) {
                     return (
@@ -836,18 +820,34 @@ export function Home() {
                   }
                 })
               ) : (
-                <Text
-                  color="gray.300"
-                  fontSize={["sm", "md", "lg"]}
-                  fontWeight="300"
-                >
-                  Programação insdisponível no momento!
-                </Text>
-              )}
+                <></>
+              )} */}
             </ScrollView>
           </Modal.Body>
         </Modal.Content>
       </Modal>
+      {/* <Modal isOpen={selectUserPoint} onClose={() => setSelectUserPoint(false)}>
+        <Modal.Content maxWidth="400px">
+          <Modal.CloseButton />
+          <Modal.Header>Aviso!</Modal.Header>
+          <Modal.Body justifyContent="center" alignItems="center">
+            <Image
+              size="sm"
+              resizeMode="cover"
+              source={ImagePoint}
+              alt={"Ponto de ônibus"}
+            />
+            <Text
+              my={2}
+              color="gray.300"
+              fontSize={["sm", "md", "lg"]}
+              fontWeight="300"
+            >
+              Selecione um Ponto de ônibus!
+            </Text>
+          </Modal.Body>
+        </Modal.Content>
+      </Modal> */}
       <Modal isOpen={modalInfoRoute} onClose={() => setModalInfoRoute(false)}>
         <Modal.Content maxWidth="400px">
           <Modal.CloseButton />
@@ -922,14 +922,3 @@ export function Home() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});

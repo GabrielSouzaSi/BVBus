@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useIsFocused} from "@react-navigation/native";
 import { TouchableOpacity } from "react-native";
 import {
   VStack,
@@ -50,6 +50,8 @@ type schedule = {
 export function LineCard() {
   const navigation = useNavigation<AppNavigatorRoutesProps>();
 
+  const isFocused = useIsFocused();
+
   const route = useRoute();
 
   const toast = useToast();
@@ -66,7 +68,6 @@ export function LineCard() {
   const [isLoading, setIsLoading] = useState(false);
 
   function handleGoBack() {
-    setLine(null);
     navigation.navigate("line");
   }
 
@@ -87,7 +88,7 @@ export function LineCard() {
 
       setLine(response.data.data.linha);
     } catch (error) {
-      console.log(`Erro ao consultar horários, rota => http://appbus.conexo.solutions:8000/api/lines/${lineId}/hours`);
+      console.log(`Erro ao consultar horários, rota => https://appbus.conexo.solutions/api/lines/${lineId}/hours`);
       toast.show({
         title: "Error no carregamento!",
         placement: "top",
@@ -99,10 +100,12 @@ export function LineCard() {
   }
 
   useEffect(() => {
-    if (lineId) {
+    if (isFocused) {
       getRouteId();
+    } else {
+      setLine(null);
     }
-  }, [lineId]);
+  },[isFocused])
 
   return (
     <VStack flex={1}>
@@ -110,35 +113,31 @@ export function LineCard() {
         <>
           <HStack
             bg="white"
-            px={4}
-            pb={4}
+            px={2}
+            pb={2}
             pt={10}
-            shadow={3}
             justifyContent="space-between"
           >
             <TouchableOpacity onPress={handleGoBack} activeOpacity={0.7}>
               <HStack alignItems="center">
                 <Icon as={Entypo} name="chevron-thin-left" color="gray.300" />
-                <Text color="gray.300" fontSize={["xs","sm", "md"]} fontWeight="200" ml={1}>
+                <Text color="gray.300" fontSize={["md", "lg"]} fontWeight="300" ml={1}>
                   Voltar
                 </Text>
               </HStack>
             </TouchableOpacity>
-
-            <Center>
-              <Text color="green.500" fontSize={["xs","sm", "md"]} fontWeight="300">
-                {`${line.number} - ${line.description} - ${line.sense}`}
-              </Text>
-            </Center>
           </HStack>
           {routeLatLgt && <Map coordinates={routeLatLgt} />}
           <VStack px={8} mt={5} space={5}>
             <Center>
               <Text color="gray.300" fontSize={["sm", "md", "lg"]} fontWeight="400">
-                Horários disponíveis
+                Horários de saída
               </Text>
-            </Center>
+              <Text color="green.500" fontSize={["sm", "md", "lg"]} fontWeight="400">
+                {`${line.number} - ${line.description} - ${line.sense}`}
+              </Text>
             <Divider />
+            </Center>
           </VStack>
           <ScrollView>
             {hours && (

@@ -17,19 +17,19 @@ type Props = TouchableOpacityProps & {
 
 export function ListLine({ number, title, ...rest }: Props) {
   return (
-    <TouchableOpacity {...rest}>
+    <TouchableOpacity style={{paddingRight:2}}  {...rest}>
       <HStack
         bg="white"
         alignItems="center"
         pr={2}
         rounded="md"
         mb={4}
-        shadow={3}
+        shadow={2}
       >
-        <Center w={16} h={16} rounded="sm" bg="green.500" mr={4}>
+        <Center w={14} h={14} rounded="sm" bg="green.500" mr={4}>
           <Text
             color="white"
-            fontWeight="400"
+            fontWeight="300"
             fontFamily="bold"
             fontStyle="normal"
             fontSize={["sm", "md", "lg"]}

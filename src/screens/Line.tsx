@@ -8,7 +8,7 @@ import { ListLine } from "@components/ListLine";
 
 import { AppNavigatorRoutesProps } from "@routes/app.routes";
 
-import { api } from "@services/api";
+import { lines } from "@services/api";
 
 import { RoutesDTO } from "@dtos/UserDTO";
 
@@ -19,20 +19,19 @@ export function Line() {
   const [result, setResult] = useState<RoutesDTO[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [line, setLine] = useState(Number);
 
-  function handleOpenLineCard() {
-    navigation.navigate("lineCard", { lineId: line });
+  function handleOpenLineCard(id: number) {    
+    navigation.navigate("lineCard", { lineId: id });
   }
 
   // Requisição para listar todas as linhas
   async function getRoutes() {
     setIsLoading(true);
     try {
-      const response = await api.get("");
+      const response = await lines.get("");
       setResult(response.data);
     } catch (error) {
-      console.log(`Erro ao consultar todas as linhas, rota => http://appbus.conexo.solutions:8000/api/lines`);
+      console.log(`Erro ao consultar todas as linhas, rota => http://appbus.conexo.solutions:8000/api/lines-mobile`);
       toast.show({
         title: "Error no carregamento!",
         placement: "top",
@@ -44,32 +43,27 @@ export function Line() {
   }
 
   useEffect(() => {
-    if (line) {
-      handleOpenLineCard();
-    }
-  }, [line]);
-  useEffect(() => {
     getRoutes();
   }, []);
   return (
     <>
       {!isLoading ? (
         <VStack flex={1}>
-          <ScreenHeader title="Linhas dinponíveis" />
+          <ScreenHeader title="Linhas disponíveis" />
 
-          <VStack pb={10}>
+          <VStack p={5}>
             <FlatList
               data={result} //dados
               keyExtractor={(item: any) => item.id} // chave: valor
               renderItem={({ item }) => (
                 <ListLine
-                  number={item.number}
-                  title={item.description + " - " + item.sense}
-                  onPress={() => setLine(item.id)}
+                  number={item.linha.slice(0,3)}
+                  title={item.linha}
+                  onPress={() => handleOpenLineCard(item.id)}
                 />
               )}
               showsVerticalScrollIndicator={false} //nao exibe a barrinha
-              _contentContainerStyle={{ padding:8 }}
+              _contentContainerStyle={{paddingBottom: 10}}
             />
           </VStack>
         </VStack>

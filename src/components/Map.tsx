@@ -21,7 +21,7 @@ export function Map({ coordinates, ...rest }: Props) {
 
   async function onMapLoaded() {
     if (coordinates.length > 1) {
-      mapRef.current?.fitToSuppliedMarkers(["departure", "arrival"], {
+      mapRef.current?.fitToSuppliedMarkers(["arrival","departure"], {
         edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
       });
     }
@@ -44,15 +44,6 @@ export function Map({ coordinates, ...rest }: Props) {
       onMapLoaded={onMapLoaded}
       {...rest}
     >
-      <Marker identifier="departure" coordinate={coordinates[0]}>
-        <View style={{width: 50, height:50, alignItems:"center"}}>
-          <Text style={{fontSize:12, fontWeight:"bold",color:"#fff", paddingHorizontal:2, backgroundColor:"#1cb442"}}>
-            Saída
-          </Text>
-          <Icon as={Entypo} size={8} name="location-pin" color="red.400" />
-        </View>
-      </Marker>
-
       {coordinates.length > 1 && (
         <>
           <Marker
@@ -70,10 +61,19 @@ export function Map({ coordinates, ...rest }: Props) {
           <Polyline
             coordinates={coordinates}
             strokeColor="#0DA63E"
-            strokeWidth={7}
+            strokeWidth={4}
           />
         </>
       )}
+
+      <Marker identifier="departure" coordinate={coordinates[0]}>
+        <View style={{width: 50, height:50, alignItems:"center"}}>
+          <Text style={{fontSize:12, fontWeight:"bold",color:"#fff", paddingHorizontal:2, backgroundColor:"#1cb442"}}>
+            Saída
+          </Text>
+          <Icon as={Entypo} size={8} name="location-pin" color="red.400" />
+        </View>
+      </Marker>
     </MapView>
   );
 }

@@ -1,6 +1,5 @@
 import { Platform } from "react-native";
 import { useTheme } from "native-base";
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   createBottomTabNavigator,
   BottomTabNavigationProp,
